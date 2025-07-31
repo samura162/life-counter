@@ -13,14 +13,13 @@
   button { font-size:1.2rem; margin:0.2rem; padding:0.4rem 1rem; border:none; border-radius:0.5rem; cursor:pointer; }
   .plus { background:#4CAF50; color:#fff; }
   .minus { background:#e74c3c; color:#fff; }
-  button:disabled { opacity:0.5; cursor:not-allowed; }
 </style>
 </head>
 <body>
 <h1>MTG 統率者戦 Life Counter</h1>
 
 <div>
-  あなたは: 
+  表示の基準: 
   <select id="userSelect">
     <option value="">選択してください</option>
     <option value="A">A</option>
@@ -37,7 +36,6 @@ const scriptUrl = "https://script.google.com/macros/s/AKfycbzwt4TRCLcvz4FU1UxOXH
 let myName = "";
 let gameData = {};
 
-// プレイヤーカード描画
 function render() {
   const container = document.getElementById("players");
   container.innerHTML = "";
@@ -49,20 +47,19 @@ function render() {
       <h2>Player ${name}</h2>
       <div>Life: <span class="life">${p.life}</span></div>
       <div>
-        <button class="plus" ${myName!==name?"disabled":""} onclick="changeLife('${name}',1)">+1</button>
-        <button class="minus" ${myName!==name?"disabled":""} onclick="changeLife('${name}',-1)">-1</button>
+        <button class="plus" onclick="changeLife('${name}',1)">+1</button>
+        <button class="minus" onclick="changeLife('${name}',-1)">-1</button>
       </div>
       <div>統率者唱えた回数: <span class="casts">${p.casts}</span></div>
       <div>
-        <button class="plus" ${myName!==name?"disabled":""} onclick="changeCasts('${name}',1)">+1</button>
-        <button class="minus" ${myName!==name?"disabled":""} onclick="changeCasts('${name}',-1)">-1</button>
+        <button class="plus" onclick="changeCasts('${name}',1)">+1</button>
+        <button class="minus" onclick="changeCasts('${name}',-1)">-1</button>
       </div>
     `;
     container.appendChild(div);
   });
 }
 
-// データ取得
 async function fetchData() {
   try {
     const res = await fetch(scriptUrl);
@@ -74,7 +71,6 @@ async function fetchData() {
   }
 }
 
-// データ送信
 async function updateData(player) {
   try {
     await fetch(scriptUrl, {
@@ -87,7 +83,6 @@ async function updateData(player) {
   }
 }
 
-// 操作
 function changeLife(player, delta) {
   gameData[player].life += delta;
   if (gameData[player].life < 0) gameData[player].life = 0;
@@ -102,13 +97,10 @@ function changeCasts(player, delta) {
   updateData(player);
 }
 
-// ユーザー選択イベント
 document.getElementById("userSelect").addEventListener("change", e => {
   myName = e.target.value;
-  render();
 });
 
-// 初期ロード
 fetchData();
 setInterval(fetchData, 3000);
 </script>
