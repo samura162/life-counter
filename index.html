@@ -3,85 +3,114 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MTG Life Counter (Google Sheets同期版)</title>
+<title>MTG 統率者戦 Life Counter</title>
 <style>
   body { background:#1b1b1b; color:#fff; font-family:sans-serif; text-align:center; margin:0; padding:1rem; }
   h1 { color:#ffcc66; }
+  select { font-size:1.2rem; padding:0.3rem; margin:1rem; }
   .player { margin:1rem auto; padding:1rem; background:#2b2b2b; border-radius:1rem; max-width:400px; }
-  .life { font-size:3rem; margin:1rem 0; font-weight:bold; }
-  button { font-size:1.5rem; margin:0 1rem; padding:0.5rem 1.5rem; border:none; border-radius:0.8rem; cursor:pointer; }
+  .life, .casts { font-size:2rem; margin:0.5rem 0; font-weight:bold; }
+  button { font-size:1.2rem; margin:0.2rem; padding:0.4rem 1rem; border:none; border-radius:0.5rem; cursor:pointer; }
   .plus { background:#4CAF50; color:#fff; }
   .minus { background:#e74c3c; color:#fff; }
+  button:disabled { opacity:0.5; cursor:not-allowed; }
 </style>
 </head>
 <body>
-<h1>MTG Life Counter (Google Sheets同期版)</h1>
+<h1>MTG 統率者戦 Life Counter</h1>
 
-<div class="player">
-  <h2>Player 1</h2>
-  <div class="life" id="p1">--</div>
-  <button class="plus" onclick="changeLife('p1', 1)">+1</button>
-  <button class="minus" onclick="changeLife('p1', -1)">-1</button>
+<div>
+  あなたは: 
+  <select id="userSelect">
+    <option value="">選択してください</option>
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="C">C</option>
+    <option value="D">D</option>
+  </select>
 </div>
 
-<div class="player">
-  <h2>Player 2</h2>
-  <div class="life" id="p2">--</div>
-  <button class="plus" onclick="changeLife('p2', 1)">+1</button>
-  <button class="minus" onclick="changeLife('p2', -1)">-1</button>
-</div>
+<div id="players"></div>
 
 <script>
 const scriptUrl = "https://script.google.com/macros/s/AKfycbzwt4TRCLcvz4FU1UxOXHUqvM3sTsVMqhyopWqEEcshZb71ws6pSdcIYmenXn930VcTdg/exec";
+let myName = "";
+let gameData = {};
 
-let life = { p1: 20, p2: 20 };
-
-// 画面に反映
-function renderLife() {
-  document.getElementById("p1").innerText = life.p1;
-  document.getElementById("p2").innerText = life.p2;
+// プレイヤーカード描画
+function render() {
+  const container = document.getElementById("players");
+  container.innerHTML = "";
+  ["A","B","C","D"].forEach(name => {
+    const p = gameData[name] || { life: 0, casts: 0 };
+    const div = document.createElement("div");
+    div.className = "player";
+    div.innerHTML = `
+      <h2>Player ${name}</h2>
+      <div>Life: <span class="life">${p.life}</span></div>
+      <div>
+        <button class="plus" ${myName!==name?"disabled":""} onclick="changeLife('${name}',1)">+1</button>
+        <button class="minus" ${myName!==name?"disabled":""} onclick="changeLife('${name}',-1)">-1</button>
+      </div>
+      <div>統率者唱えた回数: <span class="casts">${p.casts}</span></div>
+      <div>
+        <button class="plus" ${myName!==name?"disabled":""} onclick="changeCasts('${name}',1)">+1</button>
+        <button class="minus" ${myName!==name?"disabled":""} onclick="changeCasts('${name}',-1)">-1</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
 }
 
-// Google Apps Scriptから現在値を取得
-async function fetchLife() {
+// データ取得
+async function fetchData() {
   try {
     const res = await fetch(scriptUrl);
     const data = await res.json();
-    if (data.p1 !== undefined && data.p2 !== undefined) {
-      life.p1 = parseInt(data.p1);
-      life.p2 = parseInt(data.p2);
-      renderLife();
-    }
+    gameData = data;
+    render();
   } catch(e) {
-    console.error("fetchLife error:", e);
+    console.error("fetch error", e);
   }
 }
 
-// Google Apps Scriptに更新を送る
-async function updateLife() {
+// データ送信
+async function updateData(player) {
   try {
     await fetch(scriptUrl, {
       method: "POST",
-      body: JSON.stringify(life),
-      headers: { "Content-Type": "application/json" }
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({player, life: gameData[player].life, casts: gameData[player].casts})
     });
   } catch(e) {
-    console.error("updateLife error:", e);
+    console.error("update error", e);
   }
 }
 
+// 操作
 function changeLife(player, delta) {
-  life[player] += delta;
-  if (life[player] < 0) life[player] = 0;
-  renderLife();
-  updateLife();
+  gameData[player].life += delta;
+  if (gameData[player].life < 0) gameData[player].life = 0;
+  render();
+  updateData(player);
 }
 
-// 3秒ごとに同期（ポーリング）
-setInterval(fetchLife, 3000);
+function changeCasts(player, delta) {
+  gameData[player].casts += delta;
+  if (gameData[player].casts < 0) gameData[player].casts = 0;
+  render();
+  updateData(player);
+}
 
-// 初期ロード時に取得
-fetchLife();
+// ユーザー選択イベント
+document.getElementById("userSelect").addEventListener("change", e => {
+  myName = e.target.value;
+  render();
+});
+
+// 初期ロード
+fetchData();
+setInterval(fetchData, 3000);
 </script>
 </body>
 </html>
