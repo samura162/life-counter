@@ -60,7 +60,7 @@
 <div id="players"></div>
 
 <script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbx1A_R84290NVHuq7EePfpy6P7mtG7uWuGR9942o2LVzIbt9Z74klFXq9TdLdT6Gtwz3A/exec";
+const scriptUrl = "https://script.google.com/macros/s/AKfycbxUq-jXp07P7D4vJqnnWJ2mem0YzP4DDWc2M272KQCn0BSJu2H1Dyv8UtQjYJBA6Zg0Bw/exec";
 let gameData = {};
 let playerAssignments = { "1": "", "2": "", "3": "", "4": "" };
 
@@ -156,32 +156,32 @@ async function fetchData() {
   }
 }
 
+// fetchリクエストを簡略化してCORSエラーを回避
 async function updateData(slot) {
-  try {
-    isUpdating = true;
-    await fetch(scriptUrl, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        slot: slot,
-        display: gameData[slot].display,
-        name: playerAssignments[slot] || gameData[slot].name,
-        life: gameData[slot].life,
-        casts: gameData[slot].casts,
-        damage1: gameData[slot].damage1,
-        damage2: gameData[slot].damage2,
-        damage3: gameData[slot].damage3,
-        damage4: gameData[slot].damage4,
-        hand: gameData[slot].hand,
-        poison: gameData[slot].poison,
-        rad: gameData[slot].rad
-      })
-    });
-  } catch(e) {
-    console.error("update error", e);
-  } finally {
-    isUpdating = false;
-  }
+  try {
+    isUpdating = true;
+    await fetch(scriptUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        slot: slot,
+        display: gameData[slot].display,
+        name: playerAssignments[slot] || gameData[slot].name,
+        life: gameData[slot].life,
+        casts: gameData[slot].casts,
+        damage1: gameData[slot].damage1,
+        damage2: gameData[slot].damage2,
+        damage3: gameData[slot].damage3,
+        damage4: gameData[slot].damage4,
+        hand: gameData[slot].hand,
+        poison: gameData[slot].poison,
+        rad: gameData[slot].rad
+      })
+    });
+  } catch(e) {
+    console.error("update error", e);
+  } finally {
+    isUpdating = false;
+  }
 }
 
 fetchData();
