@@ -145,15 +145,16 @@ function scheduleUpdate(slot) {
 }
 
 async function fetchData() {
-  if (isUpdating) return; // 更新中は取得をスキップ
-  try {
-    const res = await fetch(scriptUrl);
-    const data = await res.json();
-    gameData = data;
-    render();
-  } catch(e) {
-    console.error("fetch error", e);
-  }
+  if (isUpdating) return;
+  try {
+    const res = await fetch(scriptUrl);
+    const data = await res.json();
+    console.log(data); // 取得したデータをログに出力
+    gameData = data;
+    render();
+  } catch(e) {
+    console.error("fetch error", e);
+  }
 }
 
 // fetchリクエストを簡略化してCORSエラーを回避
