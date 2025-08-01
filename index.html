@@ -1,192 +1,79 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>統率者戦ライフカウンタ(読込みに何秒か掛かるよ)</title>
-<style>
-  body { background:#1b1b1b; color:#fff; font-family:sans-serif; text-align:center; margin:0; padding:1rem; }
-  h1 { color:#ffcc66; }
-  #players {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  .player {
-    padding:1rem;
-    background:#2b2b2b;
-    border-radius:1rem;
-  }
-  .player-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem; /* ①とselectの間の余白 */
-    justify-content: center; /* 中央揃え */
-  }
-  .player-order {
-    font-size: 1.5rem;
-  }
-  .stat {
-    font-size:1.2rem;
-    margin:0.3rem 0;
-  }
-  .value {
-    font-size:1.5rem;
-    font-weight:bold;
-    display:inline-block;
-    width:3rem;
-  }
-  button {
-    font-size:1rem;
-    margin:0.1rem;
-    padding:0.3rem 0.6rem;
-    border:none;
-    border-radius:0.5rem;
-    cursor:pointer;
-  }
-  .plus { background:#4CAF50; color:#fff; }
-  .minus { background:#e74c3c; color:#fff; }
-  select { font-size:1rem; padding:0.2rem; margin:0; }
-  @media (max-width: 600px) {
-    #players { grid-template-columns: 1fr; }
-  }
-</style>
+    <meta charset="UTF-8">
+    <title>ライフカウンター (Cloud Run)</title>
 </head>
 <body>
-<h1>統率者戦ライフカウンタ(読込みに何秒か掛かるよ)</h1>
+    <h1>ライフカウンター</h1>
+    <p>現在のライフポイント: <span id="life_point">読み込み中...</span></p>
 
-<div id="players"></div>
+    <button onclick="updateLifeValue(1)">+1</button>
+    <button onclick="updateLifeValue(-1)">-1</button>
+    <button onclick="updateLifeValue(100)">+100</button>
+    <button onclick="updateLifeValue(-100)">-100</button>
+    <button onclick="resetLife()">リセット</button>
 
-<script>
-const scriptUrl = "https://script.google.com/macros/s/AKfycbzbL99WkE23_T5RD4MEDOWS0V36mpMV4sZ4EO3fD9-2rnYXUAbiCcvgRBiXK0yIdDs/exec";
-let gameData = {};
-let playerAssignments = { "1": "", "2": "", "3": "", "4": "" };
+    <script>
+        // ここをデプロイしたCloud Run servicesのURLに書き換えてください！
+        const UPDATE_URL = "https://updatelife-826016819078.asia-northeast2.run.app";
+        const GET_URL = "https://getlife-826016819078.asia-northeast2.run.app";
+        
+        const lifePointElement = document.getElementById('life_point');
 
-// 遅延送信用タイマー
-let updateTimers = {};
+        // ライフポイントを取得して表示する関数
+        async function fetchLifePoint() {
+            try {
+                const response = await fetch(GET_URL);
+                const lifePoint = await response.text();
+                lifePointElement.textContent = lifePoint;
+            } catch (error) {
+                console.error('Failed to fetch life point:', error);
+                lifePointElement.textContent = 'エラー';
+            }
+        }
 
-// 送信中フラグ
-let isUpdating = false;
+        // ライフポイントを更新する関数
+        async function updateLifeValue(value) {
+            try {
+                const response = await fetch(UPDATE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ change: value }),
+                });
+                const result = await response.text();
+                console.log(result);
+                // 更新後に再度ライフポイントを取得して表示
+                fetchLifePoint();
+            } catch (error) {
+                console.error('Failed to update life point:', error);
+            }
+        }
 
-function render() {
-  const container = document.getElementById("players");
-  container.innerHTML = "";
+        // リセットする関数
+        async function resetLife() {
+            if (confirm('本当にリセットしますか？')) {
+                // リセット用に`update_life`の`if request.path == '/reset'`の部分にアクセスする
+                try {
+                    const response = await fetch(`${UPDATE_URL}/reset`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    const result = await response.text();
+                    console.log(result);
+                    fetchLifePoint();
+                } catch (error) {
+                    console.error('Failed to reset life point:', error);
+                }
+            }
+        }
 
-  // 時計回りに1→2→4→3
-  ["1","2","4","3"].forEach(slot => {
-    const p = gameData[slot];
-    if (!p || p.display !== 1) return;
-
-    const div = document.createElement("div");
-    div.className = "player";
-
-    div.innerHTML = `
-      <h2 class="player-header">
-        <span class="player-order">${p.order || ""}</span>
-        <select onchange="selectUser('${slot}', this.value)">
-          <option value="">選択してください</option>
-          <option value="イコリア先生" ${playerAssignments[slot]==="イコリア先生"?"selected":""}>イコリア先生</option>
-          <option value="もいくん" ${playerAssignments[slot]==="もいくん"?"selected":""}>もいくん</option>
-          <option value="消散" ${playerAssignments[slot]==="消散"?"selected":""}>消散</option>
-          <option value="さむら" ${playerAssignments[slot]==="さむら"?"selected":""}>さむら</option>
-        </select>
-      </h2>
-      ${renderStat(slot, "life", "ライフ")}
-      ${renderStat(slot, "casts", "統率者を唱えた回数")}
-      ${renderStat(slot, "hand", "手札の枚数")}
-      ${renderStat(slot, "poison", "毒カウンター")}
-      ${renderStat(slot, "rad", "RADカウンター")}
-      <h3>統率者ダメージ</h3>
-      ${[1,2,3,4].map(i => renderStat(slot, "damage"+i, `統率者ダメージ${i}`)).join("")}
-    `;
-    container.appendChild(div);
-  });
-}
-
-function renderStat(slot, field, label) {
-  const val = gameData[slot] ? gameData[slot][field] : 0;
-  return `
-    <div class="stat">
-      ${label}:
-      <button class="minus" onclick="changeValue('${slot}','${field}',-1)">-</button>
-      <span class="value" id="slot-${slot}-${field}">${val}</span>
-      <button class="plus" onclick="changeValue('${slot}','${field}',1)">+</button>
-    </div>
-  `;
-}
-
-function selectUser(slot, user) {
-  playerAssignments[slot] = user;
-  scheduleUpdate(slot);
-}
-
-function changeValue(slot, field, delta) {
-  if (!gameData[slot]) return;
-  const newValue = gameData[slot][field] += delta;
-  if (newValue < 0) gameData[slot][field] = 0;
-  const valueSpan = document.getElementById(`slot-${slot}-${field}`);
-  if (valueSpan) {
-    valueSpan.textContent = gameData[slot][field];
-  }
-  scheduleUpdate(slot);
-}
-
-// 遅延送信スケジュール
-function scheduleUpdate(slot) {
-  if (updateTimers[slot]) {
-    clearTimeout(updateTimers[slot]);
-  }
-  updateTimers[slot] = setTimeout(() => {
-    updateData(slot);
-    updateTimers[slot] = null;
-  }, 1500); // 1.5秒後に送信
-}
-
-async function fetchData() {
-  if (isUpdating) return;
-  try {
-    const res = await fetch(scriptUrl);
-    const data = await res.json();
-    console.log(data); // 取得したデータをログに出力
-    gameData = data;
-    render();
-  } catch(e) {
-    console.error("fetch error", e);
-  }
-}
-
-// fetchリクエストを簡略化してCORSエラーを回避
-async function updateData(slot) {
-  try {
-    isUpdating = true;
-    await fetch(scriptUrl, {
-      method: "POST",
-      body: JSON.stringify({
-        slot: slot,
-        display: gameData[slot].display,
-        name: playerAssignments[slot] || gameData[slot].name,
-        life: gameData[slot].life,
-        casts: gameData[slot].casts,
-        damage1: gameData[slot].damage1,
-        damage2: gameData[slot].damage2,
-        damage3: gameData[slot].damage3,
-        damage4: gameData[slot].damage4,
-        hand: gameData[slot].hand,
-        poison: gameData[slot].poison,
-        rad: gameData[slot].rad
-      })
-    });
-  } catch(e) {
-    console.error("update error", e);
-  } finally {
-    isUpdating = false;
-  }
-}
-
-fetchData();
-setInterval(fetchData, 3000);
-</script>
+        // ページ読み込み時にライフポイントを取得
+        fetchLifePoint();
+    </script>
 </body>
 </html>
