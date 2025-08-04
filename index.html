@@ -1,21 +1,44 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <title>Google Apps Script レスポンス</title>
+</head>
 <body>
 
-<script>
-  // ウェブアプリのURLを指定
-  const url = 'https://script.google.com/macros/s/AKfycbw0MRiE4JPyM7tLpRmO_UEO6v3q9NJFWi0-LGBOF5EPaiqrlyyfpD8C1wdsvz0evl5J/exec?text=Hello from JS&callback=myFunc';
+  <h1>Google Apps Scriptからのレスポンス</h1>
+  
+  <p id="response-message"></p>
 
-  // fetch関数でGETリクエストを送信
-  fetch(url)
-    .then(response => response.text()) // レスポンスをテキストとして取得
-    .then(data => {
-      console.log(data); // "myFunc({"message":"You say Hello from JS"})" がコンソールに表示される
-    })
-    .catch(error => {
-      console.error('エラー:', error);
-    });
-</script>
+  <script>
+    // ウェブアプリのデプロイIDをここに貼り付けてください
+    const DEPLOYMENT_ID = 'あなたのデプロイID';
+    
+    // GETリクエストを送るURLを構築
+    const url = `https://script.google.com/macros/s/${DEPLOYMENT_ID}/exec?text=Hello from my website`;
+
+    // fetch関数でGETリクエストを送信
+    fetch(url)
+      .then(response => {
+        // レスポンスがOK（成功）かどうかを確認
+        if (!response.ok) {
+          throw new Error('ネットワークエラーが発生しました。');
+        }
+        // レスポンスをJSONとして解析
+        return response.json();
+      })
+      .then(data => {
+        // HTML要素を取得
+        const responseElement = document.getElementById('response-message');
+        // レスポンスからメッセージを取得し、画面に表示
+        responseElement.textContent = data.message;
+      })
+      .catch(error => {
+        // エラーが発生した場合、エラーメッセージを画面に表示
+        const responseElement = document.getElementById('response-message');
+        responseElement.textContent = 'エラー: ' + error.message;
+        console.error('エラー:', error);
+      });
+  </script>
 
 </body>
 </html>
