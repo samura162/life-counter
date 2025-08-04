@@ -1,79 +1,21 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>ライフカウンター (Cloud Run)</title>
-</head>
+<html>
 <body>
-    <h1>ライフカウンター</h1>
-    <p>現在のライフポイント: <span id="life_point">読み込み中...</span></p>
 
-    <button onclick="updateLifeValue(1)">+1</button>
-    <button onclick="updateLifeValue(-1)">-1</button>
-    <button onclick="updateLifeValue(100)">+100</button>
-    <button onclick="updateLifeValue(-100)">-100</button>
-    <button onclick="resetLife()">リセット</button>
+<script>
+  // ウェブアプリのURLを指定
+  const url = 'https://script.google.com/macros/s/AKfycbw0MRiE4JPyM7tLpRmO_UEO6v3q9NJFWi0-LGBOF5EPaiqrlyyfpD8C1wdsvz0evl5J/exec?text=Hello from JS&callback=myFunc';
 
-    <script>
-        // ここをデプロイしたCloud Run servicesのURLに書き換えてください！
-        const UPDATE_URL = "https://updatelife-826016819078.asia-northeast2.run.app";
-        const GET_URL = "https://getlife-826016819078.asia-northeast2.run.app";
-        
-        const lifePointElement = document.getElementById('life_point');
+  // fetch関数でGETリクエストを送信
+  fetch(url)
+    .then(response => response.text()) // レスポンスをテキストとして取得
+    .then(data => {
+      console.log(data); // "myFunc({"message":"You say Hello from JS"})" がコンソールに表示される
+    })
+    .catch(error => {
+      console.error('エラー:', error);
+    });
+</script>
 
-        // ライフポイントを取得して表示する関数
-        async function fetchLifePoint() {
-            try {
-                const response = await fetch(GET_URL);
-                const lifePoint = await response.text();
-                lifePointElement.textContent = lifePoint;
-            } catch (error) {
-                console.error('Failed to fetch life point:', error);
-                lifePointElement.textContent = 'エラー';
-            }
-        }
-
-        // ライフポイントを更新する関数
-        async function updateLifeValue(value) {
-            try {
-                const response = await fetch(UPDATE_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ change: value }),
-                });
-                const result = await response.text();
-                console.log(result);
-                // 更新後に再度ライフポイントを取得して表示
-                fetchLifePoint();
-            } catch (error) {
-                console.error('Failed to update life point:', error);
-            }
-        }
-
-        // リセットする関数
-        async function resetLife() {
-            if (confirm('本当にリセットしますか？')) {
-                // リセット用に`update_life`の`if request.path == '/reset'`の部分にアクセスする
-                try {
-                    const response = await fetch(`${UPDATE_URL}/reset`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                    const result = await response.text();
-                    console.log(result);
-                    fetchLifePoint();
-                } catch (error) {
-                    console.error('Failed to reset life point:', error);
-                }
-            }
-        }
-
-        // ページ読み込み時にライフポイントを取得
-        fetchLifePoint();
-    </script>
 </body>
 </html>
