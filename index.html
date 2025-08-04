@@ -11,10 +11,10 @@
 
   <script>
     // ウェブアプリのデプロイIDをここに貼り付けてください
-    const DEPLOYMENT_ID = 'AKfycbxLB0-Pq1-0yPsY2PypYWQbgtBIIkR_RO9q53204N0G9sKfOUNevjeIInhS-KUeVDFU';
+    const DEPLOYMENT_ID = 'AKfycbywdn7r8kKiygvoRQfNccE0pDX93COEnDTaxsf1CQa2ToV6z6gT6PGtkTrCYpwFS-e8';
     
     // GETリクエストを送るURLを構築
-    const url = `https://script.google.com/macros/s/${DEPLOYMENT_ID}/exec?text=Hello from my website`;
+    const url = `https://script.google.com/macros/s/${DEPLOYMENT_ID}/exec`;
 
     // fetch関数でGETリクエストを送信
     fetch(url)
@@ -29,8 +29,8 @@
       .then(data => {
         // HTML要素を取得
         const responseElement = document.getElementById('response-message');
-        // レスポンスからメッセージを取得し、画面に表示
-        responseElement.textContent = data.message;
+        // レスポンスからセルの値を取得し、画面に表示
+        responseElement.textContent = data.value; // <-- ここを修正
       })
       .catch(error => {
         // エラーが発生した場合、エラーメッセージを画面に表示
